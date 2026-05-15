@@ -524,6 +524,17 @@ describe('BaseTableForm', () => {
     ]);
   });
 
+  it('should not call onSubmit when the Cancel button is clicked', async () => {
+    render(<TestTableFormWrapper />);
+
+    const user = new TestUserEvent();
+
+    await user.type(screen.getByTestId('tableNameInput'), 'test_table');
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(mocks.onSubmit).not.toHaveBeenCalled();
+  });
+
   it('should submit a colliding default as a literal when the user picks the create item', async () => {
     render(<TestTableFormWrapper />);
 

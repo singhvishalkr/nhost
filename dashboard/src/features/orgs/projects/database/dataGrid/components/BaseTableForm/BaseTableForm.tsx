@@ -138,6 +138,8 @@ function NameInput() {
   );
 }
 
+const DIRTY_SOURCE_ID = 'base-table-form';
+
 const ACCORDION_SECTION_VALUES = [
   'columns',
   'foreignKeys',
@@ -153,20 +155,32 @@ function FormFooter({
   onSubmitClick,
 }: Pick<BaseTableFormProps, 'onCancel' | 'submitButtonText'> &
   Pick<DialogFormProps, 'location'> & { onSubmitClick?: VoidFunction }) {
-  const { onDirtyStateChange } = useDialog();
-  const { isSubmitting, dirtyFields } = useFormState();
-
-  // react-hook-form's isDirty gets true even if an input field is focused, then
-  // immediately unfocused - we can't rely on that information
-  const isDirty = Object.keys(dirtyFields).length > 0;
+  const { setDirtySource } = useDialog();
+  const form = useFormContext();
+  const { isSubmitting } = useFormState();
 
   useEffect(() => {
-    onDirtyStateChange(isDirty, location);
-  }, [isDirty, location, onDirtyStateChange]);
+    const unsubscribe = form.subscribe({
+      formState: { dirtyFields: true },
+      // react-hook-form's isDirty flips true when an input is focused then
+      // immediately blurred — count dirtyFields keys instead.
+      callback: ({ dirtyFields }) => {
+        setDirtySource(
+          DIRTY_SOURCE_ID,
+          Object.keys(dirtyFields ?? {}).length > 0,
+          location,
+        );
+      },
+    });
+    return () => {
+      unsubscribe();
+      setDirtySource(DIRTY_SOURCE_ID, false, location);
+    };
+  }, [form, setDirtySource, location]);
 
   return (
     <div className="box grid flex-shrink-0 grid-flow-col justify-between gap-3 border-t-1 p-2">
-      <Button variant="ghost" onClick={onCancel} tabIndex={isDirty ? -1 : 0}>
+      <Button type="button" variant="ghost" onClick={onCancel}>
         Cancel
       </Button>
 
